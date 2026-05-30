@@ -1,4 +1,4 @@
-<img width="1366" height="768" alt="Screenshot (5)" src="https://github.com/user-attachments/assets/6de43a4c-4c6b-4599-876f-c5a578cf3638" /><img width="1366" height="768" alt="Screenshot (5)" src="https://github.com/user-attachments/assets/b25a39bc-1582-4f9d-8335-f90e363ff428" /># 🧠 NovaMind AI — Modern RAG PDF Assistant
+# 🧠 NovaMind AI — Modern RAG PDF Assistant
 
 NovaMind AI is a modern AI-powered Retrieval-Augmented Generation (RAG) application that allows users to upload PDF documents and interact with them conversationally using advanced semantic search and LLM-based reasoning.
 
