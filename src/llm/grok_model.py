@@ -6,18 +6,20 @@ import os
 
 load_dotenv()
 
+groq_api_key = os.getenv("GROQ_API_KEY")
+if not groq_api_key:
+    raise EnvironmentError(
+        "The GROQ_API_KEY environment variable is required. Add it to your .env file or environment."
+    )
+
 # Initialize Groq LLM
 
 llm = ChatGroq(
-    groq_api_key=os.getenv("GROQ_API_KEY"),
-
-    # Updated working model
-    model_name="llama-3.3-70b-versatile",
-
-    temperature=0.3
+    groq_api_key=groq_api_key, model_name="llama-3.3-70b-versatile", temperature=0.3
 )
 
 # Function to get AI response
+
 
 def get_llm_response(query, context):
 

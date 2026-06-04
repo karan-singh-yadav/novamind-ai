@@ -1,22 +1,16 @@
 import chromadb
+import uuid
 from src.ingestion.embeddings import embedding_function
 
-client = chromadb.PersistentClient(
-    path="./chroma_db"
-)
+client = chromadb.PersistentClient(path="./chroma_db")
 
-collection = client.get_or_create_collection(
-    name="rag_collection"
-)
 
 def store_embeddings(chunks):
 
+    client.delete_collection(name="rag_collection")
+    collection = client.get_or_create_collection(name="rag_collection")
+
     embeddings = embedding_function(chunks)
+    ids = [str(uuid.uuid4()) for _ in chunks]
 
-    ids = [str(i) for i in range(len(chunks))]
-
-    collection.add(
-        documents=chunks,
-        embeddings=embeddings,
-        ids=ids
-    )
+    collection.add(documents=chunks, embeddings=embeddings, ids=ids)
