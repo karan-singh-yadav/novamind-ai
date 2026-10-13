@@ -24,6 +24,14 @@ The project includes an automated evaluation layer that measures answer quality 
 - Modern dark-themed interface with glassmorphism styling
 
 ## Screenshots
+<img width="1366" height="634" alt="Screenshot (7)" src="https://github.com/user-attachments/assets/6da9103c-61c5-4741-ac6b-60189ab0be40" />
+
+<img width="1366" height="625" alt="Screenshot (8)" src="https://github.com/user-attachments/assets/5a668bcb-6f21-4264-9309-98ea75e31e08" />
+
+<img width="1366" height="618" alt="Screenshot (9)" src="https://github.com/user-attachments/assets/e4e52c75-a19f-45d7-8de0-3be9b58704f3" />
+
+<img width="1366" height="614" alt="Screenshot (10)" src="https://github.com/user-attachments/assets/b41d6317-5cc5-470f-8957-05e7e283ddb0" />
+
 
 <!-- PASTE YOUR EXISTING SCREENSHOTS SECTION HERE -->
 
