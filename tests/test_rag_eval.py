@@ -13,7 +13,7 @@ from src.eval.eval_judge import GroqJudge
 from src.retrieval.retriever import retrieve_docs
 from src.llm.grok_model import get_llm_response
 
-judge = GroqJudge(model_name="llama-3.3-70b-versatile")
+judge = GroqJudge(model_name="llama-3.1-8b-instant")
 faithfulness_metric = FaithfulnessMetric(threshold=0.6, model=judge)
 relevancy_metric = AnswerRelevancyMetric(threshold=0.6, model=judge)
 
@@ -24,8 +24,7 @@ def load_test_data():
 
 @pytest.mark.parametrize("item", load_test_data())
 def test_rag_pipeline_quality(item):
-    # Space out API requests to prevent Groq rate limits
-    time.sleep(3)
+    time.sleep(2)
     query = item["input"]
     expected_output = item["expected_output"]
 

@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class GroqJudge(DeepEvalBaseLLM):
-    def __init__(self, model_name: str = "llama-3.3-70b-versatile"):
+    def __init__(self, model_name: str = "llama-3.1-8b-instant"):
         self.model_name = model_name
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
@@ -29,12 +29,11 @@ class GroqJudge(DeepEvalBaseLLM):
 
     def generate(self, prompt: str) -> str:
         max_retries = 4
-        backoff = 4
+        backoff = 3
 
         for attempt in range(max_retries):
             try:
-                # Respect Groq RPM pacing
-                time.sleep(2)
+                time.sleep(1.5)
                 completion = self.client.chat.completions.create(
                     messages=[
                         {
@@ -45,7 +44,7 @@ class GroqJudge(DeepEvalBaseLLM):
                     ],
                     model=self.model_name,
                     temperature=0.0,
-                    max_tokens=800,
+                    max_tokens=600,
                     response_format={"type": "json_object"}
                 )
                 raw_response = completion.choices[0].message.content
@@ -62,7 +61,7 @@ class GroqJudge(DeepEvalBaseLLM):
                         messages=[{"role": "user", "content": prompt}],
                         model=self.model_name,
                         temperature=0.0,
-                        max_tokens=800
+                        max_tokens=600
                     )
                     return self._clean_json_output(completion.choices[0].message.content)
                 raise e
