@@ -13,7 +13,7 @@ from src.eval.eval_judge import GroqJudge
 from src.retrieval.retriever import retrieve_docs
 from src.llm.grok_model import get_llm_response
 
-judge = GroqJudge(model_name="llama-3.1-8b-instant")
+judge = GroqJudge(model_name="llama-3.3-70b-versatile")
 faithfulness_metric = FaithfulnessMetric(threshold=0.6, model=judge)
 relevancy_metric = AnswerRelevancyMetric(threshold=0.6, model=judge)
 

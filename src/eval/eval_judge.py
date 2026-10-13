@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class GroqJudge(DeepEvalBaseLLM):
-    def __init__(self, model_name: str = "llama-3.1-8b-instant"):
+    def __init__(self, model_name: str = "llama-3.3-70b-versatile"):
         self.model_name = model_name
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
@@ -33,7 +33,7 @@ class GroqJudge(DeepEvalBaseLLM):
 
         for attempt in range(max_retries):
             try:
-                time.sleep(1.5)
+                time.sleep(2)
                 completion = self.client.chat.completions.create(
                     messages=[
                         {
