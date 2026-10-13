@@ -14,8 +14,8 @@ llm = ChatGroq(
     groq_api_key=groq_api_key,
     model_name=MODEL_NAME,
     temperature=0.2,
-    max_tokens=2048,  # gpt-oss spends tokens on reasoning, so 600 is too low
-    model_kwargs={"reasoning_effort": "low"},
+    max_tokens=2048,
+    reasoning_effort="low",   # passed directly, not via model_kwargs
 )
 
 
