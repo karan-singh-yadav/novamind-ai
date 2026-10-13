@@ -1,0 +1,14 @@
+[
+  {
+    "input": "What is Supervised Learning?",
+    "expected_output": "Supervised learning is a subcategory of machine learning where algorithms are trained on labeled datasets."
+  },
+  {
+    "input": "What is the primary difference between classification and regression?",
+    "expected_output": "Classification predicts discrete categorical outputs, while regression predicts continuous numerical values."
+  },
+  {
+    "input": "What is overfitting?",
+    "expected_output": "Overfitting occurs when a machine learning model learns the training data and noise too well, causing poor generalization on unseen data."
+  }
+]
