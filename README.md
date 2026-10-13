@@ -1,8 +1,10 @@
 # NovaMind AI — Evaluated RAG PDF Assistant
 
-NovaMind AI is an AI-powered Retrieval-Augmented Generation (RAG) application that allows users to upload PDF documents and interact with them conversationally using semantic search and large language models.
+![RAG Eval](https://github.com/karan-singh-yadav/novamind-ai/actions/workflows/eval_ci.yml/badge.svg)
 
-This project extends a document-question-answering application with an evaluation layer designed to measure response quality, assess grounding in retrieved context, and detect regressions through automated testing.
+NovaMind AI is a Retrieval-Augmented Generation (RAG) application that lets users upload PDF documents and ask questions about them using semantic search and large language models.
+
+The project includes an automated evaluation layer that measures answer quality and grounding in retrieved context, and a CI pipeline that fails the build when quality drops below a threshold.
 
 **Built with:** Python, Streamlit, LangChain, ChromaDB, Sentence Transformers, Groq API, DeepEval, and GitHub Actions.
 
@@ -13,43 +15,33 @@ This project extends a document-question-answering application with an evaluatio
 - Semantic search using vector embeddings
 - Persistent vector storage with ChromaDB
 - Groq-powered language model inference
-- Context-grounded answer generation
+- Context-grounded answers that admit when the document lacks the information
 - Automated RAG evaluation using DeepEval
-- Custom `GroqJudge` integration for LLM-as-a-judge evaluation
+- Custom `GroqJudge` for LLM-as-a-judge evaluation
 - Faithfulness and answer-relevancy measurement
-- Configurable evaluation thresholds for regression testing
-- GitHub Actions workflow for automated checks
+- Configurable quality thresholds enforced in CI
+- GitHub Actions workflow that blocks regressions
 - Modern dark-themed interface with glassmorphism styling
-- Interactive conversational experience
 
 ## Screenshots
 
-### Application Interface
-
-<img width="1366" height="634" alt="Screenshot (7)" src="https://github.com/user-attachments/assets/e7341beb-b3b7-45ac-ae04-d860e45cb939" />
-
-<img width="1366" height="625" alt="Screenshot (8)" src="https://github.com/user-attachments/assets/0cadd1dc-e925-4e84-b35a-da7de51bfe7e" />
-
-<img width="1366" height="618" alt="Screenshot (9)" src="https://github.com/user-attachments/assets/98b465e6-1103-4362-8146-9fdda4fc3569" />
-
-<img width="1366" height="614" alt="Screenshot (10)" src="https://github.com/user-attachments/assets/90fe2964-656b-430d-8a04-ce7d63796000" />
-
+<!-- PASTE YOUR EXISTING SCREENSHOTS SECTION HERE -->
 
 ## Technology Stack
 
-| Technology | Purpose |
-|---|---|
-| Python | Core application and evaluation logic |
-| Streamlit | Interactive user interface |
-| LangChain | LLM and retrieval workflow integration |
-| Groq API | Language model inference |
-| ChromaDB | Persistent vector database |
-| Sentence Transformers | Semantic embedding generation |
-| DeepEval | LLM and RAG evaluation |
-| Custom GroqJudge | Connects a Groq model to the evaluation framework |
-| GitHub Actions | Automated testing and evaluation workflow |
+| Technology            | Purpose                                           |
+| --------------------- | ------------------------------------------------- |
+| Python                | Core application and evaluation logic             |
+| Streamlit             | Interactive user interface                        |
+| LangChain             | LLM and retrieval workflow integration            |
+| Groq API              | Language model inference                          |
+| ChromaDB              | Persistent vector database                        |
+| Sentence Transformers | Semantic embedding generation (`all-MiniLM-L6-v2`) |
+| DeepEval              | LLM and RAG evaluation                            |
+| Custom GroqJudge      | Connects a Groq model to the evaluation framework |
+| GitHub Actions        | Automated testing and evaluation workflow         |
 
-The evaluation judge is configured to use `openai/gpt-oss-120b`, subject to model availability and compatibility with the custom judge implementation.
+Both answer generation and the evaluation judge use `openai/gpt-oss-120b` on Groq Cloud. The model can be changed with the `GROQ_MODEL` environment variable.
 
 ## System Architecture
 
@@ -77,86 +69,63 @@ flowchart TD
     P -->|Fail| R[CI Check Fails]
 ```
 
-*The evaluation and CI/CD components should be retained in this diagram only to the extent that they are implemented and working in the repository.*
-
 ## How It Works
 
 1. **Document ingestion:** PDF files are processed to extract text.
-2. **Text chunking:** Extracted text is split into smaller passages for retrieval.
-3. **Embedding generation:** Sentence Transformers converts passages into vector representations.
-4. **Vector storage:** ChromaDB stores embeddings and associated document content.
-5. **Semantic retrieval:** The user's question is embedded and relevant chunks are retrieved.
-6. **Answer generation:** The question and retrieved context are passed to the Groq language model.
-7. **Response evaluation:** DeepEval assesses generated responses against configured quality metrics.
-8. **Regression testing:** GitHub Actions can run the evaluation suite and enforce configured thresholds on repository changes.
+2. **Text chunking:** Extracted text is split into overlapping passages (1000 characters, 200 overlap).
+3. **Embedding generation:** Sentence Transformers converts passages into vectors.
+4. **Vector storage:** ChromaDB stores embeddings and document content.
+5. **Semantic retrieval:** The question is embedded and the top matching chunks are retrieved.
+6. **Answer generation:** The question and retrieved context are sent to the Groq model, which is instructed to answer only from the context.
+7. **Response evaluation:** DeepEval scores answers with Faithfulness and Answer Relevancy.
+8. **Regression testing:** GitHub Actions runs the evaluation suite on every push and pull request.
 
 ## RAG Evaluation with DeepEval
 
-A RAG application should not only generate answers but also provide a way to evaluate whether those answers are relevant and supported by the retrieved documents.
-
-NovaMind AI's evaluation layer uses DeepEval with a custom `GroqJudge` implementation.
+The evaluation layer uses DeepEval with a custom `GroqJudge` (`src/eval/eval_judge.py`), a `DeepEvalBaseLLM` subclass that calls Groq, handles rate limits with retries, and extracts clean JSON from model output.
 
 ### Evaluation Metrics
 
-| Metric | Description |
-|---|---|
-| Faithfulness | Evaluates whether the answer's claims are supported by the retrieved context |
-| Answer Relevancy | Evaluates whether the generated answer addresses the user's question |
-| Contextual Relevancy | Evaluates how relevant the retrieved context is to the question, if configured |
-| Answer Correctness | Evaluates agreement with reference answers, if configured |
+| Metric           | Description                                                                  |
+| ---------------- | ---------------------------------------------------------------------------- |
+| Faithfulness     | Whether the answer's claims are supported by the retrieved context           |
+| Answer Relevancy | Whether the generated answer addresses the user's question                   |
 
 ### Evaluation Dataset
 
-A reproducible evaluation dataset can contain:
-
-- User questions
-- Reference answers, where available
-- Retrieved document context
-- Generated answers
-- Evaluation scores
-- Pass/fail results
-
-The dataset should include both answerable and unanswerable questions to test whether the application responds appropriately when the source documents do not contain sufficient evidence.
+The dataset is in `tests/eval_dataset.json`. Each case contains a question and a reference answer based on the source PDF (`machine_learning_tutorial.pdf`). Retrieved context and generated answers are produced at test time.
 
 ### Benchmark Results
 
-Record results after running the evaluation suite on your actual dataset.
+| Measurement                | Result                             |
+| -------------------------- | ---------------------------------- |
+| Number of evaluation cases | 3                                  |
+| Metrics                    | Faithfulness, Answer Relevancy     |
+| Threshold (each metric)    | 0.6                                |
+| Generator and judge model  | `openai/gpt-oss-120b` (Groq Cloud) |
+| Evaluation pass rate       | 3/3 in the latest CI run           |
 
-| Measurement | Result |
-|---|---|
-| Number of evaluation cases | To be measured |
-| Faithfulness score | To be measured |
-| Answer relevancy score | To be measured |
-| Evaluation pass rate | To be measured |
-| Average response latency | To be measured |
+The dataset is small, so these results are a regression baseline rather than a full benchmark. Expanding it with more answerable and unanswerable questions is planned.
 
-**Note:** No benchmark scores are claimed here. Replace these placeholders with measured results from your implementation.
+## Continuous Integration
 
-## Continuous Integration and Regression Testing
+The workflow in `.github/workflows/eval_ci.yml` runs on every push and pull request to `main`:
 
-GitHub Actions can automate testing and evaluation when changes are pushed or pull requests are opened.
+1. Set up Python 3.11 and install dependencies.
+2. Build the vector store from the PDF (the local `chroma_db/` is not committed, so CI creates it).
+3. Retrieve context and generate answers for each case in the dataset.
+4. Score each answer with Faithfulness and Answer Relevancy using `GroqJudge`.
+5. Fail the build if any case scores below the 0.6 threshold.
 
-The intended workflow includes:
-
-1. Setting up Python and installing dependencies.
-2. Running unit tests and other configured checks.
-3. Executing the RAG evaluation dataset.
-4. Calculating configured evaluation metrics.
-5. Comparing results against defined quality thresholds.
-6. Failing the workflow when required quality gates are not satisfied.
-
-For reliable regression testing, use a stable evaluation dataset and document the model, configuration, and thresholds used for each benchmark.
-
-A workflow that merely executes the evaluation script does not enforce quality gates unless the results are explicitly checked.
+This requires a `GROQ_API_KEY` repository secret (Settings → Secrets and variables → Actions).
 
 ## Installation and Setup
 
 ### Prerequisites
 
-- Python installed on your system
+- Python 3.11
 - Git
 - A Groq API key
-- Access to the required model and dependencies
 
 ### 1. Clone the Repository
 
@@ -191,11 +160,11 @@ pip install -r requirements.txt
 
 Create a `.env` file in the project root:
 
-```env
-GROQ_API_KEY=your_groq_api_key
 ```
-
-If your evaluation implementation uses separate model configuration variables, add those according to the names expected by your code.
+GROQ_API_KEY=your_groq_api_key
+# Optional: override the default model
+# GROQ_MODEL=openai/gpt-oss-120b
+```
 
 Get your API key from the [Groq Console](https://console.groq.com/keys).
 
@@ -207,74 +176,61 @@ Get your API key from the [Groq Console](https://console.groq.com/keys).
 streamlit run app.py
 ```
 
-Open the local URL displayed in the terminal, usually:
-
-`http://localhost:8501`
+Open `http://localhost:8501` in your browser.
 
 ### 6. Run the Evaluation Suite
 
-Use the actual evaluation command implemented in your repository. For example:
-
 ```bash
-python evaluate.py
+pytest tests/test_rag_eval.py -v
 ```
 
-If your evaluation suite uses pytest, run:
+The test builds the vector store from `machine_learning_tutorial.pdf`, retrieves context for each question in `tests/eval_dataset.json`, generates answers, and scores them with DeepEval. A case passes only if both Faithfulness and Answer Relevancy are at or above 0.6.
 
-```bash
-pytest -q
+## Project Structure
+
 ```
-
-These are examples; verify the filenames and commands against your project before using them.
+novamind-ai/
+├── app.py                      # Streamlit application
+├── benchmark_chunks.py         # Chunking benchmark script
+├── machine_learning_tutorial.pdf
+├── requirements.txt
+├── src/
+│   ├── ingestion/              # PDF loading, chunking, embeddings
+│   ├── retrieval/              # ChromaDB vector store and retriever
+│   ├── llm/                    # Groq answer generation
+│   └── eval/                   # Custom GroqJudge for DeepEval
+├── tests/
+│   ├── eval_dataset.json       # Evaluation questions and references
+│   └── test_rag_eval.py        # DeepEval regression test
+└── .github/workflows/
+    └── eval_ci.yml             # CI evaluation pipeline
+```
 
 ## Reliability and Hallucination Reduction
 
-The evaluation and grounding strategy is intended to help identify unsupported answers through:
+- Retrieved document context is supplied to the answer-generation model.
+- The prompt tells the model to say so when the context does not contain the answer.
+- Faithfulness is measured against retrieved context.
+- Answer relevancy is tested on a fixed evaluation dataset.
+- CI re-runs the checks after changes to prompts, retrieval settings, embeddings, or models.
 
-- Supplying retrieved document context to the answer-generation model.
-- Instructing the model to acknowledge insufficient evidence.
-- Measuring faithfulness against retrieved context.
-- Testing answer relevancy with a consistent evaluation dataset.
-- Running regression checks after changes to prompts, retrieval settings, embeddings, or models.
-
-Prompt instructions alone cannot guarantee hallucination-free answers. Reliable results also depend on retrieval quality, evidence verification, appropriate abstention behavior, and representative evaluation data.
+Prompt instructions alone cannot guarantee hallucination-free answers. Reliable results also depend on retrieval quality and representative evaluation data.
 
 ## Future Improvements
 
+- [x] Add automated regression thresholds to GitHub Actions.
 - [ ] Add source citations and page-level references.
-- [ ] Expand the evaluation dataset with difficult and unanswerable questions.
+- [ ] Expand the evaluation dataset, including unanswerable questions.
 - [ ] Compare retrieval configurations and embedding models.
-- [ ] Improve evaluation reporting and benchmark reproducibility.
-- [ ] Add automated regression thresholds to GitHub Actions.
+- [ ] Report average metric scores and latency per run.
 - [ ] Add Docker-based deployment.
 - [ ] Introduce FastAPI endpoints for programmatic access.
-- [ ] Add latency monitoring, structured logging, and error handling.
+- [ ] Add latency monitoring and structured logging.
 - [ ] Improve prompt-injection resistance and document access controls.
 
 ## Deployment
 
-The application can potentially be deployed using:
-
-- Streamlit Community Cloud
-- Render
-- Railway
-- AWS or other cloud platforms
-
-Deployment requires configuring secrets, dependencies, persistent storage, and any provider-specific settings.
-
-## Why This Project?
-
-NovaMind AI demonstrates practical work in:
-
-- Retrieval-Augmented Generation
-- Large language model integration
-- Semantic search and vector databases
-- Document processing and embeddings
-- LLM evaluation and response-quality measurement
-- Automated testing and CI/CD
-- AI application development
-
-The evaluation component extends the project beyond a basic document chatbot by introducing a measurable approach to RAG quality and regression testing.
+The application can be deployed on Streamlit Community Cloud, Render, Railway, or AWS. Deployment requires configuring secrets, dependencies, and persistent storage.
 
 ## Author
 
@@ -285,4 +241,3 @@ GitHub: [karan-singh-yadav](https://github.com/karan-singh-yadav)
 ---
 
 If you find this project useful, consider giving the repository a star.
-
