@@ -7,8 +7,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+DEFAULT_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+
+
 class GroqJudge(DeepEvalBaseLLM):
-    def __init__(self, model_name: str = "llama-3.3-70b-versatile"):
+    def __init__(self, model_name: str = DEFAULT_MODEL):
         self.model_name = model_name
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
@@ -19,6 +22,7 @@ class GroqJudge(DeepEvalBaseLLM):
         return self.client
 
     def _clean_json_output(self, text: str) -> str:
+        text = text or ""
         match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
         if match:
             return match.group(1).strip()
@@ -38,33 +42,36 @@ class GroqJudge(DeepEvalBaseLLM):
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are an evaluation engine. You must output strictly valid JSON without explanations."
+                            "content": "You are an evaluation engine. You must output strictly valid JSON without explanations.",
                         },
-                        {"role": "user", "content": prompt}
+                        {"role": "user", "content": prompt},
                     ],
                     model=self.model_name,
                     temperature=0.0,
-                    max_tokens=600,
-                    response_format={"type": "json_object"}
+                    max_completion_tokens=4096,
+                    reasoning_effort="low",
+                    response_format={"type": "json_object"},
                 )
-                raw_response = completion.choices[0].message.content
-                return self._clean_json_output(raw_response)
+                return self._clean_json_output(completion.choices[0].message.content)
+
             except RateLimitError:
                 if attempt < max_retries - 1:
                     time.sleep(backoff)
                     backoff += 4
                 else:
                     raise
+
             except Exception as e:
-                if "response_format" in str(e).lower() and attempt < max_retries - 1:
+                msg = str(e).lower()
+                if ("response_format" in msg or "reasoning_effort" in msg) and attempt < max_retries - 1:
                     completion = self.client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
                         model=self.model_name,
                         temperature=0.0,
-                        max_tokens=600
+                        max_completion_tokens=4096,
                     )
                     return self._clean_json_output(completion.choices[0].message.content)
-                raise e
+                raise
 
     async def a_generate(self, prompt: str) -> str:
         return self.generate(prompt)
